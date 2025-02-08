@@ -1,0 +1,19 @@
+{
+  "name": "avatar-editor-react",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "avatar-editor": "workspace:*"
+  },
+  "devDependencies": {
+    "react": "^17.0.0",
+    "react-dom": "^17.0.0"
+  },
+  "scripts": {
+    "start": "webpack serve --config webpack.config.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+} 
