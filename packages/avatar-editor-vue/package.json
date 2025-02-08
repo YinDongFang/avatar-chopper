@@ -7,12 +7,14 @@
     "avatar-editor": "workspace:*"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "^4.6.2",
+    "vite": "^4.5.9",
     "vue": "^3.0.0"
   },
   "scripts": {
-    "serve": "vue-cli-service serve"
+    "serve": "vite"
   },
   "publishConfig": {
     "access": "public"
   }
-} 
+}
