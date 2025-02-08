@@ -4,4 +4,4 @@ import { createAvatarEditor } from "avatar-editor";
 
 createAvatarEditor();
 
-createApp(AvatarEditor).mount("#app");
+createApp(AvatarEditor).mount("#app"); 
