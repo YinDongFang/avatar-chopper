@@ -1,0 +1,11 @@
+{
+  "name": "avatar-editor-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "serve": "concurrently \"pnpm --filter avatar-editor-react start\" \"pnpm --filter avatar-editor-vue serve\""
+  },
+  "devDependencies": {
+    "concurrently": "^7.0.0"
+  }
+} 
