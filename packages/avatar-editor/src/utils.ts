@@ -4,56 +4,58 @@ const isDataURL = (str: string) => {
   return !!str.match(regex)
 }
 
-export const loadImageURL = (imageURL: string, crossOrigin?: string) => {
-  new Promise<HTMLImageElement>((resolve, reject) => {
+export const loadImageURL = (url: string, crossOrigin?: string): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
     const image = new Image()
-    image.onload = () => resolve(image)
-    image.onerror = reject
-    if (!isDataURL(imageURL) && crossOrigin) {
+    if (crossOrigin) {
       image.crossOrigin = crossOrigin
     }
-    image.src = imageURL
+    image.onload = () => resolve(image)
+    image.onerror = reject
+    image.src = url
   })
 }
 
-export const loadImageFile = (file: File) =>
-  new Promise<HTMLImageElement>((resolve, reject) => {
+export const loadImageFile = (file: File): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
-      try {
-        if (!e?.target?.result) {
-          throw new Error('No image data')
-        }
-        const image = loadImageURL(e.target.result as string)
-        resolve(image)
-      } catch (e) {
-        reject(e)
+      if (e.target?.result) {
+        const image = new Image()
+        image.onload = () => resolve(image)
+        image.onerror = reject
+        image.src = e.target.result as string
+      } else {
+        reject(new Error('Failed to load image file'))
       }
     }
+    reader.onerror = reject
     reader.readAsDataURL(file)
   })
+}
 
-export const isTouchDevice =
-  typeof window !== 'undefined' &&
-  typeof navigator !== 'undefined' &&
-  ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+export const isTouchDevice = typeof window !== 'undefined' && 
+  ('ontouchstart' in window || 
+   navigator.maxTouchPoints > 0)
 
 // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
 export const isPassiveSupported = () => {
   let passiveSupported = false
-  try {
-    const options = Object.defineProperty({}, 'passive', {
-      get: function () {
-        passiveSupported = true
-      },
-    })
 
-    const handler = () => { }
-    window.addEventListener('test', handler, options)
-    window.removeEventListener('test', handler, options)
+  try {
+    const options = {
+      get passive() {
+        passiveSupported = true
+        return false
+      },
+    } as AddEventListenerOptions
+
+    window.addEventListener('test' as keyof WindowEventMap, () => {}, options)
+    window.removeEventListener('test' as keyof WindowEventMap, () => {}, options)
   } catch (err) {
     passiveSupported = false
   }
+
   return passiveSupported
 }
 
