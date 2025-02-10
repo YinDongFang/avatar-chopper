@@ -294,9 +294,8 @@ class AvatarEditor {
           this.options.onOffsetChange?.(newOffset);
         } else {
           this._offset = newOffset;
+          this.paint();
         }
-
-        this.paint();
       };
       const onPointerUp = () => {
         document.removeEventListener("pointermove", onPointerMove);
