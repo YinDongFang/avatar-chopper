@@ -273,12 +273,13 @@ class AvatarEditor {
 
   private setupEventListeners() {
     const onPointerDown = (e: PointerEvent) => {
+      e.preventDefault();
       let prevX = e.clientX;
       let prevY = e.clientY;
 
       const onPointerMove = (e: PointerEvent) => {
-        if (!this.image?.width || !this.image?.height) return;
         e.preventDefault();
+        if (!this.image?.width || !this.image?.height) return;
         const { clientX, clientY } = e;
 
         const { width, height } = this.getSize();
@@ -306,10 +307,10 @@ class AvatarEditor {
         document.removeEventListener("pointermove", onPointerMove);
         document.removeEventListener("pointerup", onPointerUp);
       };
-      document.addEventListener("pointermove", onPointerMove);
-      document.addEventListener("pointerup", onPointerUp);
+      document.addEventListener("pointermove", onPointerMove, { passive: false });
+      document.addEventListener("pointerup", onPointerUp, { passive: false });
     };
-    this.canvas.addEventListener("pointerdown", onPointerDown);
+    this.canvas.addEventListener("pointerdown", onPointerDown, { passive: false });
 
     // 添加鼠标滚轮事件监听
     const onWheel = (e: WheelEvent) => {
