@@ -95,7 +95,9 @@ class AvatarEditor {
     try {
       const image = await load();
       if (cancelled) return;
+      this.image = image;
       this.options.onLoadSuccess?.(image);
+      this.paint();
     } catch (error) {
       if (cancelled) return;
       this.options.onLoadFailure?.();
@@ -127,8 +129,8 @@ class AvatarEditor {
     const { width: renderWidth, height: renderHeight } = this.getSize();
     const { size } = this.options;
 
-    const maxOffsetX = (renderWidth - size) / 2;
-    const maxOffsetY = (renderHeight - size) / 2;
+    const maxOffsetX = (renderWidth - size) / 2 / renderWidth;
+    const maxOffsetY = (renderHeight - size) / 2 / renderHeight;
 
     const x = Math.max(-maxOffsetX, Math.min(maxOffsetX, newOffset.x));
     const y = Math.max(-maxOffsetY, Math.min(maxOffsetY, newOffset.y));
@@ -233,8 +235,8 @@ class AvatarEditor {
     const context = this.getContext();
     context.save();
     context.globalCompositeOperation = "destination-over";
-    const x = (cx + deltaX - 0.5) * width;
-    const y = (cy + deltaY - 0.5) * height;
+    const x = (deltaX - 0.5) * width + cx;
+    const y = (deltaY - 0.5) * height + cy;
     context.drawImage(this.image, x, y, width, height);
     context.restore();
   }
@@ -243,6 +245,7 @@ class AvatarEditor {
     const { maskColor, pixelRatio } = this.options;
 
     const context = this.getContext();
+    context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     context.save();
     context.scale(pixelRatio, pixelRatio);
     context.translate(0, 0);
@@ -270,20 +273,22 @@ class AvatarEditor {
 
   private setupEventListeners() {
     const onPointerDown = (e: PointerEvent) => {
-      const prevX = e.clientX;
-      const prevY = e.clientY;
+      let prevX = e.clientX;
+      let prevY = e.clientY;
 
       const onPointerMove = (e: PointerEvent) => {
         if (!this.image?.width || !this.image?.height) return;
         e.preventDefault();
         const { clientX, clientY } = e;
 
+        const { width, height } = this.getSize();
         const offset = this.getLimitOffset();
-        const scale = this.getLimitScale();
 
         // calculate offset
-        const deltaX = (clientX - prevX) / scale;
-        const deltaY = (clientY - prevY) / scale;
+        const deltaX = (clientX - prevX) / width;
+        const deltaY = (clientY - prevY) / height;
+        prevX = clientX;
+        prevY = clientY;
         const newOffset = this.getLimitOffset({
           x: offset.x + deltaX,
           y: offset.y + deltaY,
