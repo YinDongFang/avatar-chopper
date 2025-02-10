@@ -83,11 +83,11 @@ class AvatarEditor {
   public destroy() {
     // 清理 ResizeObserver
     this.resizeObserver?.disconnect();
-    
+
     // 清理事件监听器
     this.canvas.removeEventListener("wheel", this.handleWheel);
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
-    
+
     // 清理图片加载取消函数
     (this as any).cancelImageLoad?.();
   }
@@ -124,20 +124,6 @@ class AvatarEditor {
       if (cancelled) return;
       this.options.onLoadFailure?.();
     }
-  }
-
-  private getContext() {
-    const context = this.canvas.getContext("2d");
-    if (!context) {
-      throw new Error("Could not get canvas context");
-    }
-    return context;
-  }
-
-  private getCenter() {
-    const { position } = this.options;
-    const { width, height } = this.canvas;
-    return { x: width / 2 + position.x, y: height / 2 + position.y };
   }
 
   private getLimitScale(scale: number = this.options.scale || this._scale) {
@@ -185,112 +171,81 @@ class AvatarEditor {
     return { width: renderWidth, height: renderHeight };
   }
 
-  // Draws a shape on a 2D context.
-  private drawShape() {
-    const { x, y } = this.getCenter();
-    const context = this.getContext();
-    const { shape, size } = this.options;
-    if (shape === "rect") {
-      context.rect(x - size / 2, y - size / 2, size, size);
-    } else {
-      const radius = size / 2;
-      context.arc(x, y, radius, 0, Math.PI * 2);
-    }
-  }
+  private paint() {
+    const { maskColor, pixelRatio, position, shape, size, gridWidth, gridColor, borderColor, borderWidth } = this.options;
+    const { width, height } = this.canvas;
+    const x = width / 2 + position.x;
+    const y = height / 2 + position.y;
 
-  // Draws a "Rule of Three" grid on the canvas.
-  private drawGrid() {
-    const { x, y } = this.getCenter();
-    const { gridWidth, gridColor, size } = this.options;
+    const context = this.canvas.getContext("2d");
+    if (!context) throw new Error("Could not get canvas context");
+    context.clearRect(0, 0, width, height);
+    context.scale(pixelRatio, pixelRatio);
+    context.translate(0, 0);
 
+    // draws a rect or cicle shape
+    const drawShape = () => shape === "rect"
+      ? context.rect(x - size / 2, y - size / 2, size, size)
+      : context.arc(x, y, size / 2, 0, Math.PI * 2);
+
+    // draw grid lines
     if (gridColor || gridWidth) {
-      const width = gridWidth || 1;
+      const lineWidth = gridWidth || 1;
       const thirds = size / 3;
 
-      const context = this.getContext();
       context.save();
 
       context.fillStyle = gridColor || "#fff";
       context.beginPath();
       // vertical bars
-      context.fillRect(x - thirds * 0.5, y - thirds * 1.5, width, size);
-      context.fillRect(x + thirds * 0.5, y - thirds * 1.5, width, size);
+      context.fillRect(x - thirds * 0.5, y - thirds * 1.5, lineWidth, size);
+      context.fillRect(x + thirds * 0.5, y - thirds * 1.5, lineWidth, size);
       // horizontal bars
-      context.fillRect(x - thirds * 1.5, y - thirds * 0.5, size, width);
-      context.fillRect(x - thirds * 1.5, y + thirds * 0.5, size, width);
+      context.fillRect(x - thirds * 1.5, y - thirds * 0.5, size, lineWidth);
+      context.fillRect(x - thirds * 1.5, y + thirds * 0.5, size, lineWidth);
       context.fill();
-
+      // chop the shape
       context.globalCompositeOperation = "destination-in";
-
       context.beginPath();
-      this.drawShape();
+      drawShape();
       context.fill();
 
       context.restore();
     }
-  }
-
-  private drawBorder() {
-    const { borderColor, borderWidth } = this.options;
-
-    if (borderColor || borderWidth) {
-      const context = this.getContext();
-      context.save();
-
-      context.strokeStyle = borderColor || "#fff";
-      context.lineWidth = borderWidth || 1;
-      context.beginPath();
-      this.drawShape();
-      context.stroke();
-
-      context.restore();
-    }
-  }
-
-  private drawImage() {
-    if (!this.image?.width || !this.image?.height) return;
-
-    const { x: cx, y: cy } = this.getCenter();
-    const { x: deltaX, y: deltaY } = this.getLimitOffset();
-    const { width, height } = this.getSize();
-
-    const context = this.getContext();
-    context.save();
-    context.globalCompositeOperation = "destination-over";
-    const x = (deltaX - 0.5) * width + cx;
-    const y = (deltaY - 0.5) * height + cy;
-    context.drawImage(this.image, x, y, width, height);
-    context.restore();
-  }
-
-  private paint() {
-    const { maskColor, pixelRatio } = this.options;
-
-    const context = this.getContext();
-    context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    context.save();
-    context.scale(pixelRatio, pixelRatio);
-    context.translate(0, 0);
-
-    // draw grid
-    this.drawGrid();
 
     // draw black mask
     context.save();
     context.fillStyle = maskColor;
     context.beginPath();
-    this.drawShape();
-    context.rect(0, 0, this.canvas.width, this.canvas.height);
+    drawShape();
+    context.rect(0, 0, width, height);
     context.fill("evenodd");
     context.restore();
 
     // draw border
-    this.drawBorder();
+    if (borderColor || borderWidth) {
+      context.save();
+
+      context.strokeStyle = borderColor || "#fff";
+      context.lineWidth = borderWidth || 1;
+      context.beginPath();
+      drawShape();
+      context.stroke();
+
+      context.restore();
+    }
 
     //draw image
-    this.drawImage();
-
-    context.restore();
+    if (this.image?.width && this.image?.height) {
+      const { x: deltaX, y: deltaY } = this.getLimitOffset();
+      const { width, height } = this.getSize();
+      context.save();
+      context.globalCompositeOperation = "destination-over";
+      const px = (deltaX - 0.5) * width + x;
+      const py = (deltaY - 0.5) * height + y;
+      context.drawImage(this.image, px, py, width, height);
+      context.restore();
+    }
   }
 
   private handleWheel = (e: WheelEvent) => {
