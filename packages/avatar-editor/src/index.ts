@@ -73,25 +73,6 @@ class AvatarEditor {
     this.setupResizeObserver();
   }
 
-  private setupResizeObserver() {
-    this.resizeObserver = new ResizeObserver(() => {
-      this.paint();
-    });
-    this.resizeObserver.observe(this.canvas);
-  }
-
-  public destroy() {
-    // 清理 ResizeObserver
-    this.resizeObserver?.disconnect();
-
-    // 清理事件监听器
-    this.canvas.removeEventListener("wheel", this.handleWheel);
-    this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
-
-    // 清理图片加载取消函数
-    (this as any).cancelImageLoad?.();
-  }
-
   public setOptions(options: AvatarEditorOptions & AvatarEditorProps) {
     const image = this.options.image;
     this.options = { ...this.options, ...options };
@@ -256,7 +237,7 @@ class AvatarEditor {
     const scaleChange = delta > 0 ? 0.1 : -0.1;
     const newScale = this.getLimitScale(this.getLimitScale() + scaleChange);
 
-    // 更新缩放比例
+    // update scale
     if (this.options.scale !== undefined) {
       this.options.onScaleChange?.(newScale);
     } else {
@@ -309,6 +290,23 @@ class AvatarEditor {
   private setupEventListeners() {
     this.canvas.addEventListener("pointerdown", this.handlePointerDown, { passive: false });
     this.canvas.addEventListener("wheel", this.handleWheel, { passive: false });
+  }
+
+  private setupResizeObserver() {
+    this.resizeObserver = new ResizeObserver(() => this.paint());
+    this.resizeObserver.observe(this.canvas);
+  }
+
+  public destroy() {
+    // disconnect ResizeObserver
+    this.resizeObserver?.disconnect();
+
+    // remove event listeners
+    this.canvas.removeEventListener("wheel", this.handleWheel);
+    this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
+
+    // cancel image load
+    (this as any).cancelImageLoad?.();
   }
 }
 
