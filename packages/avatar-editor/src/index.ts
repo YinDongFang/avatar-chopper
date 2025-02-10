@@ -1,17 +1,18 @@
-import { loadImageURL, loadImageFile, isPassiveSupported, isTouchDevice } from './utils'
+import { loadImageURL, loadImageFile } from "./utils";
 
-type Shape = 'rect' | 'circle'
+type Shape = "rect" | "circle";
 
 interface Position {
-  x: number
-  y: number
+  x: number;
+  y: number;
 }
 
 interface AvatarEditorOptions {
   shape?: Shape;
   image?: string | File;
-  crossOrigin?: '' | 'anonymous' | 'use-credentials';
+  crossOrigin?: "" | "anonymous" | "use-credentials";
   size?: number;
+  maxScale?: number;
   position?: Position;
   pixelRatio?: number;
   maskColor?: string;
@@ -31,38 +32,42 @@ interface AvatarEditorProps {
 }
 
 const defaultOptions: Required<AvatarEditorOptions> = {
-  shape: 'circle',
+  shape: "circle",
   size: 200,
-  image: '',
-  crossOrigin: '',
+  maxScale: 3,
+  image: "",
+  crossOrigin: "",
   position: { x: 0, y: 0 },
   pixelRatio: window.devicePixelRatio || 1,
-  maskColor: '#000000aa',
-  gridColor: '#fff',
+  maskColor: "#000000aa",
+  gridColor: "#fff",
   gridWidth: 1,
-  borderColor: '#fff',
+  borderColor: "#fff",
   borderWidth: 1,
-  onLoadFailure: () => { },
-  onLoadSuccess: () => { },
-}
+  onLoadFailure: () => {},
+  onLoadSuccess: () => {},
+};
 
 class AvatarEditor {
   private canvas: HTMLCanvasElement;
-  private options: Required<AvatarEditorOptions> & AvatarEditorProps = defaultOptions;
+  private options: Required<AvatarEditorOptions> & AvatarEditorProps =
+    defaultOptions;
   private image: HTMLImageElement | undefined;
   private _offset: Position = { x: 0, y: 0 };
-  private _scale: number | null = 1;
-  private _drag: boolean = false;
+  private _scale: number = 1;
 
-  constructor(canvas: HTMLCanvasElement, options: AvatarEditorOptions & AvatarEditorProps) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    options: AvatarEditorOptions & AvatarEditorProps
+  ) {
     if (!canvas) {
-      throw new Error('Canvas element is required');
+      throw new Error("Canvas element is required");
     }
 
     this.canvas = canvas;
     this.setOptions(options);
 
-    this.setupEventListeners()
+    this.setupEventListeners();
   }
 
   public setOptions(options: AvatarEditorOptions & AvatarEditorProps) {
@@ -70,7 +75,7 @@ class AvatarEditor {
     this.options = { ...this.options, ...options };
 
     if (this.options.image !== image && this.options.image) {
-      this.loadImage()
+      this.loadImage();
     }
 
     this.paint();
@@ -80,11 +85,12 @@ class AvatarEditor {
     const { image, crossOrigin } = this.options;
     (this as any).cancelImageLoad?.();
     let cancelled = false;
-    (this as any).cancelImageLoad = () => cancelled = true;
+    (this as any).cancelImageLoad = () => (cancelled = true);
 
-    const load = typeof image === 'string'
-      ? () => loadImageURL(image, crossOrigin)
-      : () => loadImageFile(image)
+    const load =
+      typeof image === "string"
+        ? () => loadImageURL(image, crossOrigin)
+        : () => loadImageFile(image);
 
     try {
       const image = await load();
@@ -97,237 +103,210 @@ class AvatarEditor {
   }
 
   private getContext() {
-    const context = this.canvas.getContext('2d')
+    const context = this.canvas.getContext("2d");
     if (!context) {
-      throw new Error('Could not get canvas context')
+      throw new Error("Could not get canvas context");
     }
-    return context
+    return context;
+  }
+
+  private getCenter() {
+    const { position } = this.options;
+    const { width, height } = this.canvas;
+    return { x: width / 2 + position.x, y: height / 2 + position.y };
+  }
+
+  private getLimitScale(scale: number = this.options.scale || this._scale) {
+    return Math.min(this.options.maxScale, Math.max(scale, 1));
+  }
+
+  private getLimitOffset(
+    newOffset: Position = this.options.offset || this._offset
+  ) {
+    // limit offset based on actual render size
+    const { width: renderWidth, height: renderHeight } = this.getSize();
+    const { size } = this.options;
+
+    const maxOffsetX = (renderWidth - size) / 2;
+    const maxOffsetY = (renderHeight - size) / 2;
+
+    const x = Math.max(-maxOffsetX, Math.min(maxOffsetX, newOffset.x));
+    const y = Math.max(-maxOffsetY, Math.min(maxOffsetY, newOffset.y));
+    return { x, y };
+  }
+
+  private getSize(): { width: number; height: number } {
+    if (!this.image) {
+      return { width: 0, height: 0 };
+    }
+
+    const { width, height } = this.image;
+    const { size } = this.options;
+    const scale = this.getLimitScale();
+
+    // Calculate the cover size
+    const aspectRatio = width / height;
+    let renderWidth, renderHeight;
+
+    if (aspectRatio > 1) {
+      // Landscape
+      renderWidth = size * aspectRatio * scale;
+      renderHeight = size * scale;
+    } else {
+      // Portrait or square
+      renderWidth = size * scale;
+      renderHeight = (size / aspectRatio) * scale;
+    }
+
+    return { width: renderWidth, height: renderHeight };
   }
 
   // Draws a shape on a 2D context.
-  private drawShape(center: Position, size: number) {
+  private drawShape() {
+    const { x, y } = this.getCenter();
     const context = this.getContext();
-    const { shape } = this.options;
-    if (shape === 'rect') {
-      context.rect(center.x - size / 2, center.y - size / 2, size, size)
+    const { shape, size } = this.options;
+    if (shape === "rect") {
+      context.rect(x - size / 2, y - size / 2, size, size);
     } else {
-      const radius = size / 2
-      context.arc(center.x, center.y, radius, 0, Math.PI * 2)
+      const radius = size / 2;
+      context.arc(x, y, radius, 0, Math.PI * 2);
     }
   }
 
   // Draws a "Rule of Three" grid on the canvas.
-  private drawGrid(center: Position, size: number) {
-    const { x, y } = center;
-    const { gridWidth, gridColor } = this.options;
+  private drawGrid() {
+    const { x, y } = this.getCenter();
+    const { gridWidth, gridColor, size } = this.options;
 
     if (gridColor || gridWidth) {
       const width = gridWidth || 1;
-      const thirds = size / 3
+      const thirds = size / 3;
 
       const context = this.getContext();
-      context.save()
+      context.save();
 
-      context.fillStyle = gridColor || '#fff';
-      context.beginPath()
+      context.fillStyle = gridColor || "#fff";
+      context.beginPath();
       // vertical bars
       context.fillRect(x - thirds * 0.5, y - thirds * 1.5, width, size);
       context.fillRect(x + thirds * 0.5, y - thirds * 1.5, width, size);
       // horizontal bars
       context.fillRect(x - thirds * 1.5, y - thirds * 0.5, size, width);
       context.fillRect(x - thirds * 1.5, y + thirds * 0.5, size, width);
-      context.fill()
+      context.fill();
 
       context.globalCompositeOperation = "destination-in";
 
-      context.beginPath()
-      this.drawShape(center, size);
-      context.fill()
+      context.beginPath();
+      this.drawShape();
+      context.fill();
 
-      context.restore()
+      context.restore();
     }
   }
 
-  private drawBorder(center: Position, size: number) {
+  private drawBorder() {
     const { borderColor, borderWidth } = this.options;
 
     if (borderColor || borderWidth) {
       const context = this.getContext();
-      context.save()
+      context.save();
 
-      context.strokeStyle = borderColor || '#fff'
-      context.lineWidth = borderWidth || 1
-      context.beginPath()
-      this.drawShape(center, size);
-      context.stroke()
+      context.strokeStyle = borderColor || "#fff";
+      context.lineWidth = borderWidth || 1;
+      context.beginPath();
+      this.drawShape();
+      context.stroke();
 
-      context.restore()
+      context.restore();
     }
   }
 
   private drawImage() {
-    if (!this.image?.width || !this.image?.height) return
+    if (!this.image?.width || !this.image?.height) return;
 
-    const { x, y, width, height } = this.calculatePosition();
+    const { x: cx, y: cy } = this.getCenter();
+    const { x: deltaX, y: deltaY } = this.getLimitOffset();
+    const { width, height } = this.getSize();
 
     const context = this.getContext();
-    context.save()
-    context.globalCompositeOperation = 'destination-over'
-    context.drawImage(this.image, x, y, width, height)
-    context.restore()
+    context.save();
+    context.globalCompositeOperation = "destination-over";
+    const x = (cx + deltaX - 0.5) * width;
+    const y = (cy + deltaY - 0.5) * height;
+    context.drawImage(this.image, x, y, width, height);
+    context.restore();
   }
 
   private paint() {
-    const { maskColor, size, pixelRatio, position } = this.options;
-    const { width, height } = this.canvas;
-    const center = { x: width / 2 + position.x, y: height / 2 + position.y };
+    const { maskColor, pixelRatio } = this.options;
 
     const context = this.getContext();
-    context.save()
-    context.scale(pixelRatio, pixelRatio)
-    context.translate(0, 0)
+    context.save();
+    context.scale(pixelRatio, pixelRatio);
+    context.translate(0, 0);
 
     // draw grid
-    this.drawGrid(center, size);
+    this.drawGrid();
 
     // draw black mask
-    context.save()
+    context.save();
     context.fillStyle = maskColor;
     context.beginPath();
-    this.drawShape(center, size);
+    this.drawShape();
     context.rect(0, 0, this.canvas.width, this.canvas.height);
-    context.fill('evenodd')
-    context.restore()
+    context.fill("evenodd");
+    context.restore();
 
     // draw border
-    this.drawBorder(center, size);
+    this.drawBorder();
 
     //draw image
-    this.drawImage()
+    this.drawImage();
 
-    context.restore()
+    context.restore();
   }
 
   private setupEventListeners() {
-    const options = isPassiveSupported() ? { passive: false } : false
+    const onPointerDown = (e: PointerEvent) => {
+      const prevX = e.clientX;
+      const prevY = e.clientY;
 
-    this.canvas.addEventListener('mousedown', this.handleMouseDown)
-    document.addEventListener('mousemove', this.handleMouseMove, options)
-    document.addEventListener('mouseup', this.handleMouseUp, options)
+      const onPointerMove = (e: PointerEvent) => {
+        if (!this.image?.width || !this.image?.height) return;
+        e.preventDefault();
+        const { clientX, clientY } = e;
 
-    if (isTouchDevice) {
-      this.canvas.addEventListener('touchstart', this.handleTouchStart)
-      document.addEventListener('touchmove', this.handleMouseMove, options)
-      document.addEventListener('touchend', this.handleMouseUp, options)
-    }
-  }
+        const offset = this.getLimitOffset();
+        const scale = this.getLimitScale();
 
-  private handleMouseDown = (e: MouseEvent | TouchEvent) => {
-    e.preventDefault();
-    this._drag = true;
-  }
+        // calculate offset
+        const deltaX = (clientX - prevX) / scale;
+        const deltaY = (clientY - prevY) / scale;
+        const newOffset = this.getLimitOffset({
+          x: offset.x + deltaX,
+          y: offset.y + deltaY,
+        });
 
-  private handleTouchStart = (e: TouchEvent) => {
-    this._drag = true;
-  }
+        // update offset
+        if (this.options.offset) {
+          this.options.onOffsetChange?.(newOffset);
+        } else {
+          this._offset = newOffset;
+        }
 
-  private handleMouseUp = () => {
-    this._drag = false
-  }
-
-  private handleMouseMove = (e: MouseEvent | TouchEvent) => {
-    if (!this._drag) return
-    e.preventDefault()
-
-    const mousePositionX = 'targetTouches' in e ? e.targetTouches[0].pageX : e.clientX
-    const mousePositionY = 'targetTouches' in e ? e.targetTouches[0].pageY : e.clientY
-
-    if (this.state.mx !== undefined && this.state.my !== undefined) {
-      const mx = this.state.mx - mousePositionX
-      const my = this.state.my - mousePositionY
-
-      const width = this.state.image.width! * this.options.scale
-      const height = this.state.image.height! * this.options.scale
-
-      let { x: lastX, y: lastY } = this.getCroppingRect()
-
-      lastX *= width
-      lastY *= height
-
-      const x = lastX + mx
-      const y = lastY + my
-
-      const relativeWidth = (1 / this.options.scale) * this.getXScale()
-      const relativeHeight = (1 / this.options.scale) * this.getYScale()
-
-      const position = {
-        x: x / width + relativeWidth / 2,
-        y: y / height + relativeHeight / 2,
-      }
-
-      this.options.onPositionChange(position)
-      this.state.image = { ...this.state.image, ...position }
-      this.paint()
-    }
-
-    this.state.mx = mousePositionX
-    this.state.my = mousePositionY
-    this.options.onMouseMove(e)
-  }
-
-  public destroy() {
-    document.removeEventListener('mousemove', this.handleMouseMove)
-    document.removeEventListener('mouseup', this.handleMouseUp)
-
-    if (isTouchDevice) {
-      document.removeEventListener('touchmove', this.handleMouseMove)
-      document.removeEventListener('touchend', this.handleMouseUp)
-    }
-
-    this.canvas.removeEventListener('mousedown', this.handleMouseDown)
-    if (isTouchDevice) {
-      this.canvas.removeEventListener('touchstart', this.handleTouchStart)
-    }
-  }
-
-  private calculatePosition() {
-    const croppingRect = this.getCroppingRect()
-
-    const width = image.width * this.options.scale
-    const height = image.height * this.options.scale
-
-    const x = -croppingRect.x * width
-    const y = -croppingRect.y * height
-
-    return { x, y, height, width }
-  }
-
-  private getCroppingRect() {
-    const position = this.options.position || {
-      x: this.state.image.x,
-      y: this.state.image.y,
-    }
-    const width = (1 / this.options.scale) * this.getXScale()
-    const height = (1 / this.options.scale) * this.getYScale()
-
-    const croppingRect = {
-      x: position.x - width / 2,
-      y: position.y - height / 2,
-      width,
-      height,
-    }
-
-    let xMin = 0
-    let xMax = 1 - croppingRect.width
-    let yMin = 0
-    let yMax = 1 - croppingRect.height
-
-    return {
-      ...croppingRect,
-      x: Math.max(xMin, Math.min(croppingRect.x, xMax)),
-      y: Math.max(yMin, Math.min(croppingRect.y, yMax)),
-    }
+        this.paint();
+      };
+      const onPointerUp = () => {
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+      };
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
+    };
+    this.canvas.addEventListener("pointerdown", onPointerDown);
   }
 }
 
-export default AvatarEditor
+export default AvatarEditor;

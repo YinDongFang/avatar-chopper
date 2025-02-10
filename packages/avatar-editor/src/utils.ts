@@ -33,30 +33,3 @@ export const loadImageFile = (file: File): Promise<HTMLImageElement> => {
     reader.readAsDataURL(file)
   })
 }
-
-export const isTouchDevice = typeof window !== 'undefined' && 
-  ('ontouchstart' in window || 
-   navigator.maxTouchPoints > 0)
-
-// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
-export const isPassiveSupported = () => {
-  let passiveSupported = false
-
-  try {
-    const options = {
-      get passive() {
-        passiveSupported = true
-        return false
-      },
-    } as AddEventListenerOptions
-
-    window.addEventListener('test' as keyof WindowEventMap, () => {}, options)
-    window.removeEventListener('test' as keyof WindowEventMap, () => {}, options)
-  } catch (err) {
-    passiveSupported = false
-  }
-
-  return passiveSupported
-}
-
-export const isFileAPISupported = typeof File !== 'undefined'
