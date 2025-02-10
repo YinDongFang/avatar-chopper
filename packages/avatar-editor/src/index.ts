@@ -53,8 +53,10 @@ class AvatarEditor {
   private options: Required<AvatarEditorOptions> & AvatarEditorProps =
     defaultOptions;
   private image: HTMLImageElement | undefined;
+
   private _offset: Position = { x: 0, y: 0 };
   private _scale: number = 1;
+  private resizeObserver: ResizeObserver | null = null;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -68,6 +70,26 @@ class AvatarEditor {
     this.setOptions(options);
 
     this.setupEventListeners();
+    this.setupResizeObserver();
+  }
+
+  private setupResizeObserver() {
+    this.resizeObserver = new ResizeObserver(() => {
+      this.paint();
+    });
+    this.resizeObserver.observe(this.canvas);
+  }
+
+  public destroy() {
+    // 清理 ResizeObserver
+    this.resizeObserver?.disconnect();
+    
+    // 清理事件监听器
+    this.canvas.removeEventListener("wheel", this.handleWheel);
+    this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
+    
+    // 清理图片加载取消函数
+    (this as any).cancelImageLoad?.();
   }
 
   public setOptions(options: AvatarEditorOptions & AvatarEditorProps) {
@@ -271,65 +293,67 @@ class AvatarEditor {
     context.restore();
   }
 
-  private setupEventListeners() {
-    const onPointerDown = (e: PointerEvent) => {
-      e.preventDefault();
-      let prevX = e.clientX;
-      let prevY = e.clientY;
+  private handleWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    if (!this.image?.width || !this.image?.height) return;
 
-      const onPointerMove = (e: PointerEvent) => {
-        e.preventDefault();
-        if (!this.image?.width || !this.image?.height) return;
-        const { clientX, clientY } = e;
+    const delta = -e.deltaY;
+    const scaleChange = delta > 0 ? 0.1 : -0.1;
+    const newScale = this.getLimitScale(this.getLimitScale() + scaleChange);
 
-        const { width, height } = this.getSize();
-        const offset = this.getLimitOffset();
+    // 更新缩放比例
+    if (this.options.scale !== undefined) {
+      this.options.onScaleChange?.(newScale);
+    } else {
+      this._scale = newScale;
+      this.paint();
+    }
+  };
 
-        // calculate offset
-        const deltaX = (clientX - prevX) / width;
-        const deltaY = (clientY - prevY) / height;
-        prevX = clientX;
-        prevY = clientY;
-        const newOffset = this.getLimitOffset({
-          x: offset.x + deltaX,
-          y: offset.y + deltaY,
-        });
+  private handlePointerDown = (e: PointerEvent) => {
+    e.preventDefault();
+    let prevX = e.clientX;
+    let prevY = e.clientY;
 
-        // update offset
-        if (this.options.offset) {
-          this.options.onOffsetChange?.(newOffset);
-        } else {
-          this._offset = newOffset;
-          this.paint();
-        }
-      };
-      const onPointerUp = () => {
-        document.removeEventListener("pointermove", onPointerMove);
-        document.removeEventListener("pointerup", onPointerUp);
-      };
-      document.addEventListener("pointermove", onPointerMove, { passive: false });
-      document.addEventListener("pointerup", onPointerUp, { passive: false });
-    };
-    this.canvas.addEventListener("pointerdown", onPointerDown, { passive: false });
-
-    // 添加鼠标滚轮事件监听
-    const onWheel = (e: WheelEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       e.preventDefault();
       if (!this.image?.width || !this.image?.height) return;
+      const { clientX, clientY } = e;
 
-      const delta = -e.deltaY;
-      const scaleChange = delta > 0 ? 0.1 : -0.1;
-      const newScale = this.getLimitScale(this.getLimitScale() + scaleChange);
+      const { width, height } = this.getSize();
+      const offset = this.getLimitOffset();
 
-      // 更新缩放比例
-      if (this.options.scale !== undefined) {
-        this.options.onScaleChange?.(newScale);
+      // calculate offset
+      const deltaX = (clientX - prevX) / width;
+      const deltaY = (clientY - prevY) / height;
+      prevX = clientX;
+      prevY = clientY;
+      const newOffset = this.getLimitOffset({
+        x: offset.x + deltaX,
+        y: offset.y + deltaY,
+      });
+
+      // update offset
+      if (this.options.offset) {
+        this.options.onOffsetChange?.(newOffset);
       } else {
-        this._scale = newScale;
+        this._offset = newOffset;
         this.paint();
       }
     };
-    this.canvas.addEventListener("wheel", onWheel, { passive: false });
+
+    const handlePointerUp = () => {
+      document.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("pointerup", handlePointerUp);
+    };
+
+    document.addEventListener("pointermove", handlePointerMove, { passive: false });
+    document.addEventListener("pointerup", handlePointerUp, { passive: false });
+  };
+
+  private setupEventListeners() {
+    this.canvas.addEventListener("pointerdown", this.handlePointerDown, { passive: false });
+    this.canvas.addEventListener("wheel", this.handleWheel, { passive: false });
   }
 }
 
