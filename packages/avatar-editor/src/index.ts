@@ -44,8 +44,8 @@ const defaultOptions: Required<AvatarEditorOptions> = {
   gridWidth: 1,
   borderColor: "#fff",
   borderWidth: 1,
-  onLoadFailure: () => {},
-  onLoadSuccess: () => {},
+  onLoadFailure: () => { },
+  onLoadSuccess: () => { },
 };
 
 class AvatarEditor {
@@ -310,6 +310,25 @@ class AvatarEditor {
       document.addEventListener("pointerup", onPointerUp);
     };
     this.canvas.addEventListener("pointerdown", onPointerDown);
+
+    // 添加鼠标滚轮事件监听
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (!this.image?.width || !this.image?.height) return;
+
+      const delta = -e.deltaY;
+      const scaleChange = delta > 0 ? 0.1 : -0.1;
+      const newScale = this.getLimitScale(this.getLimitScale() + scaleChange);
+
+      // 更新缩放比例
+      if (this.options.scale !== undefined) {
+        this.options.onScaleChange?.(newScale);
+      } else {
+        this._scale = newScale;
+        this.paint();
+      }
+    };
+    this.canvas.addEventListener("wheel", onWheel, { passive: false });
   }
 }
 
