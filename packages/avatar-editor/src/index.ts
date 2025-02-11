@@ -90,9 +90,12 @@ class AvatarEditor {
         ...this.image,
         ...cover(this.image.src, this.options.size),
       };
-
-      this.triggerOffsetChange(this.options.offset || this._offset);
     }
+
+    if (this.options.offset) {
+      this._offset = this.options.offset;
+    }
+    this.triggerOffsetChange(this.options.offset || this._offset);
 
     this.paint();
   }
