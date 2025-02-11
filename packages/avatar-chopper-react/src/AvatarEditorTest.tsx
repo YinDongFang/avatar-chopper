@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useState } from "react";
-import AvatarEditor from "../../avatar-chopper/src/index";
+import AvatarChopper from "../../avatar-chopper/src/index";
 
-const AvatarEditorTest: React.FC = () => {
+const AvatarChopperTest: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const editorRef = useRef<AvatarEditor | null>(null);
+  const editorRef = useRef<AvatarChopper | null>(null);
 
   const [offset, setOffset] = useState<any>();
   const [scale, setScale] = useState<number>();
@@ -14,7 +14,7 @@ const AvatarEditorTest: React.FC = () => {
 
   useEffect(() => {
     if (canvasRef.current && !editorRef.current) {
-      editorRef.current = new AvatarEditor(canvasRef.current, {
+      editorRef.current = new AvatarChopper(canvasRef.current, {
         image: "https://picsum.photos/1920/1080", // 使用1920x1080尺寸的图片
         size: 300,
         maxScale: 2,
@@ -54,4 +54,4 @@ const AvatarEditorTest: React.FC = () => {
   );
 };
 
-export default AvatarEditorTest;
+export default AvatarChopperTest;

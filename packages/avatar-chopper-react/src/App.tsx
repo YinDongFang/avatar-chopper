@@ -1,7 +1,7 @@
-import AvatarEditorTest from "./AvatarEditorTest";
+import AvatarChopperTest from "./AvatarChopperTest";
 
 function App() {
-  return <AvatarEditorTest />;
+  return <AvatarChopperTest />;
 }
 
 export default App;

@@ -1,7 +1,7 @@
 import { createApp } from "vue";
-import AvatarEditor from "./AvatarEditor.vue";
-import { createAvatarEditor } from "avatar-chopper";
+import AvatarChopper from "./AvatarChopper.vue";
+import { createAvatarChopper } from "avatar-chopper";
 
-createAvatarEditor();
+createAvatarChopper();
 
-createApp(AvatarEditor).mount("#app"); 
+createApp(AvatarChopper).mount("#app"); 

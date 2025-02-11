@@ -3,7 +3,7 @@ import { loadImageURL, loadImageFile } from "./utils/loader";
 
 type Shape = "rect" | "circle";
 
-interface AvatarEditorOptions {
+interface AvatarChopperOptions {
   shape?: Shape;
   image?: string | File;
   crossOrigin?: "" | "anonymous" | "use-credentials";
@@ -20,14 +20,14 @@ interface AvatarEditorOptions {
   onLoadSuccess?: (image: HTMLImageElement) => void;
 }
 
-interface AvatarEditorProps {
+interface AvatarChopperProps {
   scale?: number;
   onScaleChange?: (scale: number) => void;
   offset?: Position;
   onOffsetChange?: (offset: Position) => void;
 }
 
-type MergeOptions = AvatarEditorOptions & typeof defaultOptions;
+type MergeOptions = AvatarChopperOptions & typeof defaultOptions;
 
 const defaultOptions = {
   shape: "circle" as Shape,
@@ -38,9 +38,9 @@ const defaultOptions = {
   maskColor: "#000000aa",
 };
 
-class AvatarEditor {
+class AvatarChopper {
   private canvas: HTMLCanvasElement;
-  private options: MergeOptions & AvatarEditorProps = defaultOptions;
+  private options: MergeOptions & AvatarChopperProps = defaultOptions;
   private image:
     | {
         src: HTMLImageElement;
@@ -58,7 +58,7 @@ class AvatarEditor {
 
   constructor(
     canvas: HTMLCanvasElement,
-    options: AvatarEditorOptions & AvatarEditorProps
+    options: AvatarChopperOptions & AvatarChopperProps
   ) {
     if (!canvas) {
       throw new Error("Canvas element is required");
@@ -72,7 +72,7 @@ class AvatarEditor {
     this.setOptions(options);
   }
 
-  public setOptions(options: AvatarEditorOptions & AvatarEditorProps) {
+  public setOptions(options: AvatarChopperOptions & AvatarChopperProps) {
     const image = this.options.image;
     this.options = { ...this.options, ...options };
 
@@ -345,4 +345,4 @@ class AvatarEditor {
   }
 }
 
-export default AvatarEditor;
+export default AvatarChopper;
