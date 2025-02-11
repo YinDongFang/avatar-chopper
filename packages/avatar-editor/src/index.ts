@@ -27,27 +27,20 @@ interface AvatarEditorProps {
   onOffsetChange?: (offset: Position) => void;
 }
 
-const defaultOptions: Required<AvatarEditorOptions> = {
-  shape: "circle",
+type MergeOptions = AvatarEditorOptions & typeof defaultOptions;
+
+const defaultOptions = {
+  shape: "circle" as Shape,
   size: 200,
   maxScale: 3,
-  image: "",
-  crossOrigin: "",
   position: { x: 0, y: 0 },
   pixelRatio: window.devicePixelRatio || 1,
   maskColor: "#000000aa",
-  gridColor: "#fff",
-  gridWidth: 1,
-  borderColor: "#fff",
-  borderWidth: 1,
-  onLoadFailure: () => {},
-  onLoadSuccess: () => {},
 };
 
 class AvatarEditor {
   private canvas: HTMLCanvasElement;
-  private options: Required<AvatarEditorOptions> & AvatarEditorProps =
-    defaultOptions;
+  private options: MergeOptions & AvatarEditorProps = defaultOptions;
   private image:
     | {
         src: HTMLImageElement;
@@ -83,7 +76,7 @@ class AvatarEditor {
     const image = this.options.image;
     this.options = { ...this.options, ...options };
 
-    if (this.options.image !== image && this.options.image) {
+    if (this.options.image !== image) {
       this.loadImage();
     }
 
@@ -106,6 +99,7 @@ class AvatarEditor {
 
   private async loadImage() {
     const { image, crossOrigin } = this.options;
+    if (!image) return;
     (this as any).cancelImageLoad?.();
     let cancelled = false;
     (this as any).cancelImageLoad = () => (cancelled = true);
