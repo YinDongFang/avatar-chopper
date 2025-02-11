@@ -92,12 +92,25 @@ class AvatarEditor {
       };
     }
 
-    if (this.options.offset) {
-      this._offset = this.options.offset;
-    }
-    this.triggerOffsetChange(this.options.offset || this._offset);
+    this._offset =
+      this.calcOffset(this.options.offset || this._offset) || this._offset;
 
     this.paint();
+  }
+
+  private calcOffset(offset: Position) {
+    if (!this.image) return;
+
+    const { width, height } = scale(this.image, this._scale);
+    const size = this.options.size;
+
+    const maxOffsetX = (width - size) / 2 / width;
+    const maxOffsetY = (height - size) / 2 / height;
+
+    return {
+      x: clamp(offset.x, -maxOffsetX, maxOffsetX),
+      y: clamp(offset.y, -maxOffsetY, maxOffsetY),
+    };
   }
 
   private async loadImage() {
@@ -223,16 +236,7 @@ class AvatarEditor {
   private triggerOffsetChange(offset: Position) {
     if (!this.image) return;
 
-    const { width, height } = scale(this.image, this._scale);
-    const size = this.options.size;
-
-    const maxOffsetX = (width - size) / 2 / width;
-    const maxOffsetY = (height - size) / 2 / height;
-
-    offset = {
-      x: clamp(offset.x, -maxOffsetX, maxOffsetX),
-      y: clamp(offset.y, -maxOffsetY, maxOffsetY),
-    };
+    offset = this.calcOffset(offset)!;
 
     if (this._offset.x !== offset.x || this._offset.y !== offset.y) {
       this.options.onOffsetChange?.(offset);
