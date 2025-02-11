@@ -1,4 +1,12 @@
-import { Position } from "../index";
+export interface Position {
+  x: number;
+  y: number;
+}
+
+export interface Size {
+  width: number;
+  height: number;
+}
 
 export const clamp = (value: number, min: number, max: number) => {
   return Math.min(max, Math.max(value, min));
@@ -11,10 +19,7 @@ export const clamp2 = (value: Position, range: Position) => {
   };
 };
 
-export const scale = (
-  { width, height }: { width: number; height: number },
-  scale: number
-) => {
+export const scale = ({ width, height }: Size, scale: number) => {
   return { width: width * scale, height: height * scale };
 };
 

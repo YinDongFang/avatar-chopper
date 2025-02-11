@@ -1,12 +1,7 @@
-import { clamp, clamp2, cover, scale } from "./utils/math";
+import { clamp, clamp2, cover, Position, scale } from "./utils/math";
 import { loadImageURL, loadImageFile } from "./utils/loader";
 
 type Shape = "rect" | "circle";
-
-export interface Position {
-  x: number;
-  y: number;
-}
 
 interface AvatarEditorOptions {
   shape?: Shape;
@@ -154,12 +149,11 @@ class AvatarEditor {
       borderColor,
       borderWidth,
     } = this.options;
+    const context = this.canvas.getContext("2d");
+    if (!context) throw new Error("Could not get canvas context");
     const { width, height } = this.canvas;
     const x = width / 2 + position.x;
     const y = height / 2 + position.y;
-
-    const context = this.canvas.getContext("2d");
-    if (!context) throw new Error("Could not get canvas context");
     context.clearRect(0, 0, width, height);
     context.scale(pixelRatio, pixelRatio);
     context.translate(0, 0);
@@ -249,13 +243,11 @@ class AvatarEditor {
 
   private handlePointerDown = (e: PointerEvent) => {
     e.preventDefault();
-    let prevX = e.clientX;
-    let prevY = e.clientY;
+    let [prevX, prevY] = [e.clientX, e.clientY];
 
-    const handlePointerMove = (e: PointerEvent) => {
+    const handlePointerMove = ({ clientX, clientY }: PointerEvent) => {
       e.preventDefault();
       if (!this.image) return;
-      const { clientX, clientY } = e;
 
       const { width, height } = scale(this.image, this._scale);
       const offset = this.getLimitOffset();
@@ -263,8 +255,7 @@ class AvatarEditor {
       // calculate offset
       const deltaX = (clientX - prevX) / width;
       const deltaY = (clientY - prevY) / height;
-      prevX = clientX;
-      prevY = clientY;
+      [prevX, prevY] = [clientX, clientY];
       const newOffset = this.getLimitOffset({
         x: offset.x + deltaX,
         y: offset.y + deltaY,
