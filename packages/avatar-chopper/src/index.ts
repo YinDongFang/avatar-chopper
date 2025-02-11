@@ -3,7 +3,7 @@ import { loadImageURL, loadImageFile } from "./utils/loader";
 
 type Shape = "rect" | "circle";
 
-interface AvatarChopperOptions {
+export interface AvatarChopperOptions {
   shape?: Shape;
   image?: string | File;
   crossOrigin?: "" | "anonymous" | "use-credentials";
@@ -18,9 +18,7 @@ interface AvatarChopperOptions {
   borderWidth?: number;
   onLoadFailure?: () => void;
   onLoadSuccess?: (image: HTMLImageElement) => void;
-}
-
-interface AvatarChopperProps {
+  // for controlle props
   scale?: number;
   onScaleChange?: (scale: number) => void;
   offset?: Position;
@@ -40,13 +38,13 @@ const defaultOptions = {
 
 class AvatarChopper {
   private canvas: HTMLCanvasElement;
-  private options: MergeOptions & AvatarChopperProps = defaultOptions;
+  private options: MergeOptions = defaultOptions;
   private image:
     | {
-        src: HTMLImageElement;
-        width: number;
-        height: number;
-      }
+      src: HTMLImageElement;
+      width: number;
+      height: number;
+    }
     | undefined;
 
   private width: number = 0;
@@ -58,7 +56,7 @@ class AvatarChopper {
 
   constructor(
     canvas: HTMLCanvasElement,
-    options: AvatarChopperOptions & AvatarChopperProps
+    options: AvatarChopperOptions
   ) {
     if (!canvas) {
       throw new Error("Canvas element is required");
@@ -72,7 +70,7 @@ class AvatarChopper {
     this.setOptions(options);
   }
 
-  public setOptions(options: AvatarChopperOptions & AvatarChopperProps) {
+  public setOptions(options: AvatarChopperOptions) {
     const image = this.options.image;
     this.options = { ...this.options, ...options };
 
