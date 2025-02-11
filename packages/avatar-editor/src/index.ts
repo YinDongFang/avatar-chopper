@@ -1,8 +1,9 @@
-import { loadImageURL, loadImageFile } from "./utils";
+import { clamp, clamp2, cover, scale } from "./utils/math";
+import { loadImageURL, loadImageFile } from "./utils/loader";
 
 type Shape = "rect" | "circle";
 
-interface Position {
+export interface Position {
   x: number;
   y: number;
 }
@@ -44,15 +45,21 @@ const defaultOptions: Required<AvatarEditorOptions> = {
   gridWidth: 1,
   borderColor: "#fff",
   borderWidth: 1,
-  onLoadFailure: () => { },
-  onLoadSuccess: () => { },
+  onLoadFailure: () => {},
+  onLoadSuccess: () => {},
 };
 
 class AvatarEditor {
   private canvas: HTMLCanvasElement;
   private options: Required<AvatarEditorOptions> & AvatarEditorProps =
     defaultOptions;
-  private image: HTMLImageElement | undefined;
+  private image:
+    | {
+        src: HTMLImageElement;
+        width: number;
+        height: number;
+      }
+    | undefined;
 
   private _offset: Position = { x: 0, y: 0 };
   private _scale: number = 1;
@@ -81,6 +88,18 @@ class AvatarEditor {
       this.loadImage();
     }
 
+    // update _scale
+    const scale = this.options.scale || this._scale;
+    this._scale = clamp(scale, 1, this.options.maxScale);
+
+    // update _image initial size
+    if (this.image) {
+      this.image = {
+        ...this.image,
+        ...cover(this.image.src, this.options.size),
+      };
+    }
+
     this.paint();
   }
 
@@ -98,7 +117,10 @@ class AvatarEditor {
     try {
       const image = await load();
       if (cancelled) return;
-      this.image = image;
+      this.image = {
+        src: image,
+        ...cover(image, this.options.size),
+      };
       this.options.onLoadSuccess?.(image);
       this.paint();
     } catch (error) {
@@ -107,53 +129,31 @@ class AvatarEditor {
     }
   }
 
-  private getLimitScale(scale: number = this.options.scale || this._scale) {
-    return Math.min(this.options.maxScale, Math.max(scale, 1));
-  }
-
   private getLimitOffset(
     newOffset: Position = this.options.offset || this._offset
   ) {
     // limit offset based on actual render size
-    const { width: renderWidth, height: renderHeight } = this.getSize();
+    const { width, height } = scale(this.image!, this._scale);
     const { size } = this.options;
 
-    const maxOffsetX = (renderWidth - size) / 2 / renderWidth;
-    const maxOffsetY = (renderHeight - size) / 2 / renderHeight;
+    const maxOffsetX = (width - size) / 2 / width;
+    const maxOffsetY = (height - size) / 2 / height;
 
-    const x = Math.max(-maxOffsetX, Math.min(maxOffsetX, newOffset.x));
-    const y = Math.max(-maxOffsetY, Math.min(maxOffsetY, newOffset.y));
-    return { x, y };
-  }
-
-  private getSize(): { width: number; height: number } {
-    if (!this.image) {
-      return { width: 0, height: 0 };
-    }
-
-    const { width, height } = this.image;
-    const { size } = this.options;
-    const scale = this.getLimitScale();
-
-    // Calculate the cover size
-    const aspectRatio = width / height;
-    let renderWidth, renderHeight;
-
-    if (aspectRatio > 1) {
-      // Landscape
-      renderWidth = size * aspectRatio * scale;
-      renderHeight = size * scale;
-    } else {
-      // Portrait or square
-      renderWidth = size * scale;
-      renderHeight = (size / aspectRatio) * scale;
-    }
-
-    return { width: renderWidth, height: renderHeight };
+    return clamp2(newOffset, { x: maxOffsetX, y: maxOffsetY });
   }
 
   private paint() {
-    const { maskColor, pixelRatio, position, shape, size, gridWidth, gridColor, borderColor, borderWidth } = this.options;
+    const {
+      maskColor,
+      pixelRatio,
+      position,
+      shape,
+      size,
+      gridWidth,
+      gridColor,
+      borderColor,
+      borderWidth,
+    } = this.options;
     const { width, height } = this.canvas;
     const x = width / 2 + position.x;
     const y = height / 2 + position.y;
@@ -165,9 +165,10 @@ class AvatarEditor {
     context.translate(0, 0);
 
     // draws a rect or cicle shape
-    const drawShape = () => shape === "rect"
-      ? context.rect(x - size / 2, y - size / 2, size, size)
-      : context.arc(x, y, size / 2, 0, Math.PI * 2);
+    const drawShape = () =>
+      shape === "rect"
+        ? context.rect(x - size / 2, y - size / 2, size, size)
+        : context.arc(x, y, size / 2, 0, Math.PI * 2);
 
     // draw grid lines
     if (gridColor || gridWidth) {
@@ -217,25 +218,25 @@ class AvatarEditor {
     }
 
     //draw image
-    if (this.image?.width && this.image?.height) {
+    if (this.image) {
       const { x: deltaX, y: deltaY } = this.getLimitOffset();
-      const { width, height } = this.getSize();
+      const { width, height } = scale(this.image, this._scale);
       context.save();
       context.globalCompositeOperation = "destination-over";
       const px = (deltaX - 0.5) * width + x;
       const py = (deltaY - 0.5) * height + y;
-      context.drawImage(this.image, px, py, width, height);
+      context.drawImage(this.image.src, px, py, width, height);
       context.restore();
     }
   }
 
   private handleWheel = (e: WheelEvent) => {
     e.preventDefault();
-    if (!this.image?.width || !this.image?.height) return;
+    if (!this.image) return;
 
     const delta = -e.deltaY;
     const scaleChange = delta > 0 ? 0.1 : -0.1;
-    const newScale = this.getLimitScale(this.getLimitScale() + scaleChange);
+    const newScale = clamp(this._scale + scaleChange, 1, this.options.maxScale);
 
     // update scale
     if (this.options.scale !== undefined) {
@@ -253,10 +254,10 @@ class AvatarEditor {
 
     const handlePointerMove = (e: PointerEvent) => {
       e.preventDefault();
-      if (!this.image?.width || !this.image?.height) return;
+      if (!this.image) return;
       const { clientX, clientY } = e;
 
-      const { width, height } = this.getSize();
+      const { width, height } = scale(this.image, this._scale);
       const offset = this.getLimitOffset();
 
       // calculate offset
@@ -283,12 +284,16 @@ class AvatarEditor {
       document.removeEventListener("pointerup", handlePointerUp);
     };
 
-    document.addEventListener("pointermove", handlePointerMove, { passive: false });
+    document.addEventListener("pointermove", handlePointerMove, {
+      passive: false,
+    });
     document.addEventListener("pointerup", handlePointerUp, { passive: false });
   };
 
   private setupEventListeners() {
-    this.canvas.addEventListener("pointerdown", this.handlePointerDown, { passive: false });
+    this.canvas.addEventListener("pointerdown", this.handlePointerDown, {
+      passive: false,
+    });
     this.canvas.addEventListener("wheel", this.handleWheel, { passive: false });
   }
 
