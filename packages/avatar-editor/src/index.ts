@@ -1,4 +1,4 @@
-import { clamp, clamp2, cover, Position, scale } from "./utils/math";
+import { clamp, cover, Position, scale } from "./utils/math";
 import { loadImageURL, loadImageFile } from "./utils/loader";
 
 type Shape = "rect" | "circle";
@@ -84,15 +84,17 @@ class AvatarEditor {
     }
 
     // update _scale
-    const scale = this.options.scale || this._scale;
-    this._scale = clamp(scale, 1, this.options.maxScale);
+    const s = this.options.scale || this._scale;
+    this._scale = clamp(s, 1, this.options.maxScale);
 
-    // update _image initial size
+    // update image initial size
     if (this.image) {
       this.image = {
         ...this.image,
         ...cover(this.image.src, this.options.size),
       };
+
+      this.triggerOffsetChange(this.options.offset || this._offset);
     }
 
     this.paint();
@@ -117,24 +119,13 @@ class AvatarEditor {
         ...cover(image, this.options.size),
       };
       this.options.onLoadSuccess?.(image);
+
+      this.triggerOffsetChange(this.options.offset || this._offset);
       this.paint();
     } catch (error) {
       if (cancelled) return;
       this.options.onLoadFailure?.();
     }
-  }
-
-  private getLimitOffset(
-    newOffset: Position = this.options.offset || this._offset
-  ) {
-    // limit offset based on actual render size
-    const { width, height } = scale(this.image!, this._scale);
-    const { size } = this.options;
-
-    const maxOffsetX = (width - size) / 2 / width;
-    const maxOffsetY = (height - size) / 2 / height;
-
-    return clamp2(newOffset, { x: maxOffsetX, y: maxOffsetY });
   }
 
   private paint() {
@@ -151,9 +142,11 @@ class AvatarEditor {
     } = this.options;
     const context = this.canvas.getContext("2d");
     if (!context) throw new Error("Could not get canvas context");
+
     const { width, height } = this.canvas;
     const x = width / 2 + position.x;
     const y = height / 2 + position.y;
+
     context.clearRect(0, 0, width, height);
     context.scale(pixelRatio, pixelRatio);
     context.translate(0, 0);
@@ -213,7 +206,7 @@ class AvatarEditor {
 
     //draw image
     if (this.image) {
-      const { x: deltaX, y: deltaY } = this.getLimitOffset();
+      const { x: deltaX, y: deltaY } = this._offset;
       const { width, height } = scale(this.image, this._scale);
       context.save();
       context.globalCompositeOperation = "destination-over";
@@ -224,21 +217,59 @@ class AvatarEditor {
     }
   }
 
+  private triggerOffsetChange(offset: Position) {
+    if (!this.image) return;
+
+    const { width, height } = scale(this.image, this._scale);
+    const size = this.options.size;
+
+    const maxOffsetX = (width - size) / 2 / width;
+    const maxOffsetY = (height - size) / 2 / height;
+
+    const newOffset = {
+      x: clamp(offset.x, -maxOffsetX, maxOffsetX),
+      y: clamp(offset.y, -maxOffsetY, maxOffsetY),
+    };
+
+    if (this._offset.x !== offset.x || this._offset.y !== offset.y) {
+      this.options.onOffsetChange?.(offset);
+
+      if (!this.options.offset) {
+        this._offset = newOffset;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private triggerScaleChange(scale: number) {
+    let repaint = false;
+
+    scale = clamp(scale, 1, this.options.maxScale);
+    if (scale !== this._scale) {
+      // update scale
+      this.options.onScaleChange?.(scale);
+      if (this.options.scale === undefined) {
+        this._scale = scale;
+        repaint = true;
+      }
+
+      repaint =
+        this.triggerOffsetChange(this.options.offset || this._offset) ||
+        repaint;
+    }
+
+    return repaint;
+  }
+
   private handleWheel = (e: WheelEvent) => {
     e.preventDefault();
     if (!this.image) return;
 
     const delta = -e.deltaY;
     const scaleChange = delta > 0 ? 0.1 : -0.1;
-    const newScale = clamp(this._scale + scaleChange, 1, this.options.maxScale);
-
-    // update scale
-    if (this.options.scale !== undefined) {
-      this.options.onScaleChange?.(newScale);
-    } else {
-      this._scale = newScale;
-      this.paint();
-    }
+    const repaint = this.triggerScaleChange(this._scale + scaleChange);
+    repaint && this.paint();
   };
 
   private handlePointerDown = (e: PointerEvent) => {
@@ -250,24 +281,18 @@ class AvatarEditor {
       if (!this.image) return;
 
       const { width, height } = scale(this.image, this._scale);
-      const offset = this.getLimitOffset();
+      const offset = this._offset;
 
       // calculate offset
       const deltaX = (clientX - prevX) / width;
       const deltaY = (clientY - prevY) / height;
       [prevX, prevY] = [clientX, clientY];
-      const newOffset = this.getLimitOffset({
+
+      const repaint = this.triggerOffsetChange({
         x: offset.x + deltaX,
         y: offset.y + deltaY,
       });
-
-      // update offset
-      if (this.options.offset) {
-        this.options.onOffsetChange?.(newOffset);
-      } else {
-        this._offset = newOffset;
-        this.paint();
-      }
+      repaint && this.paint();
     };
 
     const handlePointerUp = () => {

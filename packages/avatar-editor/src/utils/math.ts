@@ -12,13 +12,6 @@ export const clamp = (value: number, min: number, max: number) => {
   return Math.min(max, Math.max(value, min));
 };
 
-export const clamp2 = (value: Position, range: Position) => {
-  return {
-    x: clamp(value.x, -range.x, range.x),
-    y: clamp(value.y, -range.y, range.y),
-  };
-};
-
 export const scale = ({ width, height }: Size, scale: number) => {
   return { width: width * scale, height: height * scale };
 };
