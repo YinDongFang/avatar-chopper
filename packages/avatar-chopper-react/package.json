@@ -1,10 +1,10 @@
 {
-  "name": "avatar-editor-react",
+  "name": "avatar-chopper-react",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "avatar-editor": "workspace:*"
+    "avatar-chopper": "workspace:*"
   },
   "devDependencies": {
     "react": "^18.0.0",

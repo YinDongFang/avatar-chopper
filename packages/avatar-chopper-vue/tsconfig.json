@@ -4,7 +4,7 @@
   "exclude": ["src/**/__tests__/*"],
   "compilerOptions": {
     "paths": {
-      "avatar-editor": ["./../avatar-editor/src"]
+      "avatar-chopper": ["./../avatar-chopper/src"]
     }
   }
 }

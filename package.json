@@ -1,9 +1,9 @@
 {
-  "name": "avatar-editor-monorepo",
+  "name": "avatar-chopper-monorepo",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "serve": "concurrently \"pnpm --filter avatar-editor-react start\" \"pnpm --filter avatar-editor-vue serve\""
+    "serve": "concurrently \"pnpm --filter avatar-chopper-react start\" \"pnpm --filter avatar-chopper-vue serve\""
   },
   "devDependencies": {
     "concurrently": "^7.0.0"

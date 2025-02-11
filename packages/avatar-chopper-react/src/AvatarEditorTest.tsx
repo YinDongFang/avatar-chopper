@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import AvatarEditor from "../../avatar-editor/src/index";
+import AvatarEditor from "../../avatar-chopper/src/index";
 
 const AvatarEditorTest: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

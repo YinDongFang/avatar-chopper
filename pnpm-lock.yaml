@@ -12,7 +12,7 @@ importers:
         specifier: ^7.0.0
         version: 7.6.0
 
-  packages/avatar-editor:
+  packages/avatar-chopper:
     devDependencies:
       '@rollup/plugin-babel':
         specifier: ^6.0.4
@@ -33,11 +33,11 @@ importers:
         specifier: ^5.0.0
         version: 5.7.3
 
-  packages/avatar-editor-react:
+  packages/avatar-chopper-react:
     dependencies:
-      avatar-editor:
+      avatar-chopper:
         specifier: workspace:*
-        version: link:../avatar-editor
+        version: link:../avatar-chopper
     devDependencies:
       '@types/react':
         specifier: ^18.0.0
@@ -58,11 +58,11 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0
 
-  packages/avatar-editor-vue:
+  packages/avatar-chopper-vue:
     dependencies:
-      avatar-editor:
+      avatar-chopper:
         specifier: workspace:*
-        version: link:../avatar-editor
+        version: link:../avatar-chopper
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: ^4.6.2

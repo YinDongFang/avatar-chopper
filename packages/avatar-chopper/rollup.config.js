@@ -5,7 +5,7 @@ export default {
   input: 'src/index.ts',
   output: [
     {
-      file: 'dist/avatar-editor.esm.js',
+      file: 'dist/avatar-chopper.esm.js',
       format: 'esm',
       sourcemap: true
     }

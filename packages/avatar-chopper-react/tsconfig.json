@@ -21,7 +21,7 @@
     "noFallthroughCasesInSwitch": true,
 
     "paths": {
-      "avatar-editor": ["./../avatar-editor/src"]
+      "avatar-chopper": ["./../avatar-chopper/src"]
     }
   },
   "include": ["src"]
