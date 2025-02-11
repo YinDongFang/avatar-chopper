@@ -56,6 +56,9 @@ class AvatarEditor {
       }
     | undefined;
 
+  private width: number = 0;
+  private height: number = 0;
+
   private _offset: Position = { x: 0, y: 0 };
   private _scale: number = 1;
   private resizeObserver: ResizeObserver | null = null;
@@ -69,10 +72,11 @@ class AvatarEditor {
     }
 
     this.canvas = canvas;
-    this.setOptions(options);
 
     this.setupEventListeners();
     this.setupResizeObserver();
+
+    this.setOptions(options);
   }
 
   public setOptions(options: AvatarEditorOptions & AvatarEditorProps) {
@@ -226,7 +230,7 @@ class AvatarEditor {
     const maxOffsetX = (width - size) / 2 / width;
     const maxOffsetY = (height - size) / 2 / height;
 
-    const newOffset = {
+    offset = {
       x: clamp(offset.x, -maxOffsetX, maxOffsetX),
       y: clamp(offset.y, -maxOffsetY, maxOffsetY),
     };
@@ -235,7 +239,7 @@ class AvatarEditor {
       this.options.onOffsetChange?.(offset);
 
       if (!this.options.offset) {
-        this._offset = newOffset;
+        this._offset = offset;
         return true;
       }
     }
@@ -243,23 +247,18 @@ class AvatarEditor {
   }
 
   private triggerScaleChange(scale: number) {
-    let repaint = false;
-
     scale = clamp(scale, 1, this.options.maxScale);
     if (scale !== this._scale) {
       // update scale
       this.options.onScaleChange?.(scale);
+
       if (this.options.scale === undefined) {
         this._scale = scale;
-        repaint = true;
+        this.triggerOffsetChange(this.options.offset || this._offset);
+        return true;
       }
-
-      repaint =
-        this.triggerOffsetChange(this.options.offset || this._offset) ||
-        repaint;
     }
-
-    return repaint;
+    return false;
   }
 
   private handleWheel = (e: WheelEvent) => {
@@ -314,7 +313,19 @@ class AvatarEditor {
   }
 
   private setupResizeObserver() {
-    this.resizeObserver = new ResizeObserver(() => this.paint());
+    const resize = () => {
+      const styleWidth = parseFloat(getComputedStyle(this.canvas).width);
+      const styleHeight = parseFloat(getComputedStyle(this.canvas).height);
+      // 设置 canvas 的实际像素尺寸
+      this.width = styleWidth;
+      this.height = styleHeight;
+    };
+    resize();
+
+    this.resizeObserver = new ResizeObserver(() => {
+      resize();
+      this.paint();
+    });
     this.resizeObserver.observe(this.canvas);
   }
 
