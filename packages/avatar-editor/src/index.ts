@@ -147,13 +147,14 @@ class AvatarEditor {
     const context = this.canvas.getContext("2d");
     if (!context) throw new Error("Could not get canvas context");
 
-    const { width, height } = this.canvas;
+    const { width, height } = this;
+    const { width: cw, height: ch } = this.canvas;
     const x = width / 2 + position.x;
     const y = height / 2 + position.y;
 
+    context.save();
+    context.scale((cw / width) * pixelRatio, (ch / height) * pixelRatio);
     context.clearRect(0, 0, width, height);
-    context.scale(pixelRatio, pixelRatio);
-    context.translate(0, 0);
 
     // draws a rect or cicle shape
     const drawShape = () =>
@@ -219,6 +220,7 @@ class AvatarEditor {
       context.drawImage(this.image.src, px, py, width, height);
       context.restore();
     }
+    context.restore();
   }
 
   private triggerOffsetChange(offset: Position) {
