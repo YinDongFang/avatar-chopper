@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "build:core": "pnpm --filter @avatar-cropper/core run build",
+    "publish:core": "pnpm --filter @avatar-cropper/core run build",
+    "serve:react": "pnpm --filter @avatar-cropper/react run serve",
     "serve": "concurrently \"pnpm --filter avatar-cropper-react start\" \"pnpm --filter avatar-cropper-vue serve\""
   },
   "devDependencies": {
