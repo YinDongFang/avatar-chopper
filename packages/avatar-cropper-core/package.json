@@ -1,7 +1,9 @@
 {
   "name": "@avatar-cropper/core",
   "version": "1.0.0",
-  "module": "dist/avatar-cropper.esm.js",
+  "type": "module",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
   "scripts": {
     "build": "rollup -c --forceExit"
