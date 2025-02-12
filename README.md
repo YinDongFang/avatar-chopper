@@ -1,1 +1,1 @@
-# avatar-chopper
+# avatar-cropper

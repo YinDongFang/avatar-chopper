@@ -1,9 +1,9 @@
 {
-  "name": "avatar-chopper-monorepo",
+  "name": "avatar-cropper",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "serve": "concurrently \"pnpm --filter avatar-chopper-react start\" \"pnpm --filter avatar-chopper-vue serve\""
+    "serve": "concurrently \"pnpm --filter avatar-cropper-react start\" \"pnpm --filter avatar-cropper-vue serve\""
   },
   "devDependencies": {
     "concurrently": "^7.0.0"
