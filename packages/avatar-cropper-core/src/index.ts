@@ -3,7 +3,7 @@ import { loadImageURL, loadImageFile } from "./utils/loader";
 
 type Shape = "rect" | "circle";
 
-export interface AvatarChopperOptions {
+export interface AvatarCropperOptions {
   shape?: Shape;
   image?: string | File;
   crossOrigin?: "" | "anonymous" | "use-credentials";
@@ -25,7 +25,7 @@ export interface AvatarChopperOptions {
   onOffsetChange?: (offset: Position) => void;
 }
 
-type MergeOptions = AvatarChopperOptions & typeof defaultOptions;
+type MergeOptions = AvatarCropperOptions & typeof defaultOptions;
 
 const defaultOptions = {
   shape: "circle" as Shape,
@@ -36,7 +36,7 @@ const defaultOptions = {
   maskColor: "#000000aa",
 };
 
-class AvatarChopper {
+class AvatarCropper {
   private canvas: HTMLCanvasElement;
   private options: MergeOptions = defaultOptions;
   private image:
@@ -56,7 +56,7 @@ class AvatarChopper {
 
   constructor(
     canvas: HTMLCanvasElement,
-    options: AvatarChopperOptions
+    options: AvatarCropperOptions
   ) {
     if (!canvas) {
       throw new Error("Canvas element is required");
@@ -70,7 +70,7 @@ class AvatarChopper {
     this.setOptions(options);
   }
 
-  public setOptions(options: AvatarChopperOptions) {
+  public setOptions(options: AvatarCropperOptions) {
     const image = this.options.image;
     this.options = { ...this.options, ...options };
 
@@ -343,4 +343,4 @@ class AvatarChopper {
   }
 }
 
-export default AvatarChopper;
+export default AvatarCropper;
