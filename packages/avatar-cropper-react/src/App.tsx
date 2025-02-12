@@ -1,7 +1,7 @@
-import AvatarChopper from "./AvatarChopper";
+import AvatarCropper from "./AvatarCropper";
 
 function App() {
-  return <AvatarChopper
+  return <AvatarCropper
     width={1000}
     height={1000}
     props={{

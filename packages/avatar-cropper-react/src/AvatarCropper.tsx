@@ -1,17 +1,17 @@
 import React, { useRef, useEffect } from "react";
-import Chopper, { AvatarChopperOptions } from "../../avatar-chopper/src/index";
+import Cropper, { AvatarCropperOptions } from "@avatar-cropper/core";
 
-type AvatarChopperProps = {
-  props?: AvatarChopperOptions;
+type AvatarCropperProps = {
+  props?: AvatarCropperOptions;
 } & React.CanvasHTMLAttributes<HTMLCanvasElement>;
 
-const AvatarChopper: React.FC<AvatarChopperProps> = ({ props, ...restProps }: AvatarChopperProps) => {
+const AvatarCropper: React.FC<AvatarCropperProps> = ({ props, ...restProps }: AvatarCropperProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const editorRef = useRef<Chopper | null>(null);
+  const editorRef = useRef<Cropper | null>(null);
 
   useEffect(() => {
     if (canvasRef.current && !editorRef.current) {
-      editorRef.current = new Chopper(canvasRef.current, { ...props });
+      editorRef.current = new Cropper(canvasRef.current, { ...props });
 
       return () => {
         editorRef.current?.destroy();
@@ -25,4 +25,4 @@ const AvatarChopper: React.FC<AvatarChopperProps> = ({ props, ...restProps }: Av
   );
 };
 
-export default AvatarChopper;
+export default AvatarCropper;

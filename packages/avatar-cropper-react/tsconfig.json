@@ -21,7 +21,7 @@
     "noFallthroughCasesInSwitch": true,
 
     "paths": {
-      "avatar-chopper": ["./../avatar-chopper/src"]
+      "@avatar-cropper/core": ["./../avatar-cropper-core/src"]
     }
   },
   "include": ["src"]
