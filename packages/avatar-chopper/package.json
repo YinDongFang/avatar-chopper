@@ -4,7 +4,7 @@
   "module": "dist/avatar-chopper.esm.js",
   "license": "MIT",
   "scripts": {
-    "build": "rollup -c"
+    "build": "rollup -c --forceExit"
   },
   "exports": {
     ".": "./src/index.ts"
