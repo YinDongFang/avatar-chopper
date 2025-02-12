@@ -1,5 +1,5 @@
 {
-  "name": "avatar-chopper",
+  "name": "@avatar-cropper/core",
   "version": "1.0.0",
   "module": "dist/avatar-chopper.esm.js",
   "license": "MIT",
