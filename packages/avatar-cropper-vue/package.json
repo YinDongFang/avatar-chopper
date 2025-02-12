@@ -1,10 +1,10 @@
 {
-  "name": "avatar-chopper-vue",
+  "name": "@avatar-cropper/vue",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "avatar-chopper": "workspace:*"
+    "@avatar-cropper/core": "workspace:*"
   },
   "devDependencies": {
     "@vue/tsconfig": "^0.7.0",
